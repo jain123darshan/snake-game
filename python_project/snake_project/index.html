@@ -28,6 +28,10 @@
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
 
+    // Border settings: change these to any color/width you like
+    const borderColor = "#ff00ff"; // example: magenta
+    const borderWidth = 6; // pixels
+
     const box = 20; // size of snake block
     let snake = [{ x: 200, y: 200 }];
     let food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
@@ -45,6 +49,11 @@
 
     function draw() {
       ctx.clearRect(0,0,canvas.width,canvas.height);
+
+      // Draw inner boundary border (adjust color/width with the constants above)
+      ctx.lineWidth = borderWidth;
+      ctx.strokeStyle = borderColor;
+      ctx.strokeRect(borderWidth/2, borderWidth/2, canvas.width - borderWidth, canvas.height - borderWidth);
 
       // Draw food
       ctx.fillStyle = "red";
