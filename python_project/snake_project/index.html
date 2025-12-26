@@ -6,23 +6,164 @@
   <title>Snake Game</title>
   <style>
     body {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #000;
+      min-height: 100vh;
       margin: 0;
       font-family: sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Background wallpaper - change the URL to any image you prefer */
+      background: linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url('https://images.unsplash.com/photo-1503264116251-35a269479413?auto=format&fit=crop&w=1950&q=80') center/cover fixed no-repeat;
+      color: #fff;
     }
+
+    /* Layout container holds the game and the sidebar */
+    .container {
+      display: flex;
+      gap: 18px;
+      align-items: flex-start;
+      padding: 18px;
+      max-width: 980px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Right by default; switch to .layout-left to move sidebar left */
+    .layout-right { flex-direction: row; }
+    .layout-left { flex-direction: row-reverse; }
+
+    .game-card {
+      background: rgba(0,0,0,0.55);
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.7);
+      text-align: center;
+      width: fit-content;
+      min-width: 420px;
+    }
+
+    .game-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .toggle-side {
+      background: rgba(255,255,255,0.08);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+
     canvas {
-      background-color: #111;
+      background-color: rgba(0,0,0,0.35);
       display: block;
-      border: 2px solid #fff;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+      margin-top: 10px;
+    }
+
+    .sidebar {
+      background: rgba(255,255,255,0.06);
+      padding: 16px;
+      border-radius: 10px;
+      max-width: 260px;
+      color: #eee;
+      font-size: 14px;
+      line-height: 1.4;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    }
+
+    .sidebar h2 { margin-top: 0; font-size: 18px; }
+    .sidebar ul { padding-left: 18px; margin: 8px 0 0 0; }
+
+    .controls {
+      margin-top: 8px;
+      font-size: 13px;
+      opacity: 0.9;
+    }
+    h1 {
+      margin: 0 0 8px 0;
+      font-size: 24px;
+      letter-spacing: 1px;
+    }
+    #score {
+      font-weight: bold;
+    }
+
+    /* Responsive: stack on small screens */
+    @media (max-width: 720px) {
+      .container { flex-direction: column; align-items: center; gap: 12px; padding: 12px; }
+      .game-card { min-width: 280px; width: 100%; }
+      .sidebar { width: 100%; max-width: none; }
+      .toggle-side { align-self: flex-end; }
+    }
+
+    /* Game over overlay */
+    .game-over {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.55);
+      border-radius: 12px;
+      z-index: 20;
+    }
+    .game-over.hidden { display: none; }
+    .game-over-card {
+      background: rgba(255,255,255,0.06);
+      padding: 18px;
+      border-radius: 10px;
+      text-align: center;
+      color: #fff;
+      min-width: 220px;
+    }
+    .game-over-card p { margin: 0 0 12px 0; font-size: 18px; }
+    #restartBtn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #28a745;
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
     }
   </style>
 </head>
 <body>
-  <canvas id="gameCanvas" width="400" height="400"></canvas>
+  <div class="container layout-right">
+    <div class="game-card">
+      <div class="game-header">
+        <h1>Snake Game</h1>
+        <button id="toggleSide" class="toggle-side" aria-label="Toggle instructions side">Side: Right</button>
+      </div>
+
+      <div id="hud">
+        <span id="score">Score: 0</span>
+      </div>
+
+      <canvas id="gameCanvas" width="400" height="400"></canvas>
+      <p class="controls">Use arrow keys to move</p>
+
+      <!-- Game Over overlay shown on game end; press Restart to begin manually -->
+      <div id="gameOver" class="game-over hidden" role="dialog" aria-labelledby="gameOverText">
+        <div class="game-over-card">
+          <p id="gameOverText">Game Over! Score: 0</p>
+          <button id="restartBtn">Restart</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar" aria-labelledby="howto-title">
+      <h2 id="howto-title">How to Play</h2>
+      <ul>
+        <li>Use <strong>Arrow keys</strong> to move the snake.</li>
+        <li>Eat the <span style="color:red">red</span> food to grow longer.</li>
+        <li>Avoid colliding with your own body.</li>
+        <li>Your score increases by <strong>1</strong> per food.</li>
+        <li>Tip: Toggle the instructions side using the button above.</li>
+      </ul>
+    </aside>
+  </div>
 
   <script>
     const canvas = document.getElementById('gameCanvas');
@@ -37,6 +178,51 @@
     let food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
     let direction = "RIGHT";
     let score = 0;
+    const scoreEl = document.getElementById('score');
+    const containerEl = document.querySelector('.container');
+    const toggleSideBtn = document.getElementById('toggleSide');
+
+    // Toggle sidebar between left and right
+    if(toggleSideBtn && containerEl){
+      toggleSideBtn.addEventListener('click', ()=>{
+        if(containerEl.classList.contains('layout-right')){
+          containerEl.classList.remove('layout-right');
+          containerEl.classList.add('layout-left');
+          toggleSideBtn.textContent = 'Side: Left';
+        } else {
+          containerEl.classList.remove('layout-left');
+          containerEl.classList.add('layout-right');
+          toggleSideBtn.textContent = 'Side: Right';
+        }
+      });
+    }
+
+    // Game over / restart elements & logic
+    const gameOverDiv = document.getElementById('gameOver');
+    const restartBtn = document.getElementById('restartBtn');
+    const gameOverText = document.getElementById('gameOverText');
+    let gameInterval = null;
+
+    function gameOver(){
+      // Stop the game loop and show overlay
+      if(gameInterval){ clearInterval(gameInterval); gameInterval = null; }
+      if(gameOverText) gameOverText.textContent = `Game Over! Score: ${score}`;
+      if(gameOverDiv) gameOverDiv.classList.remove('hidden');
+    }
+
+    function restartGame(){
+      // Reset state and hide overlay
+      snake = [{ x: 200, y: 200 }];
+      direction = "RIGHT";
+      score = 0;
+      food = { x: Math.floor(Math.random()*20)*box, y: Math.floor(Math.random()*20)*box };
+      if(scoreEl) scoreEl.textContent = "Score: " + score;
+      if(gameOverDiv) gameOverDiv.classList.add('hidden');
+      // Restart the game loop
+      if(!gameInterval) gameInterval = setInterval(draw, 100);
+    }
+
+    if(restartBtn){ restartBtn.addEventListener('click', restartGame); }
 
     document.addEventListener('keydown', changeDirection);
 
@@ -81,10 +267,8 @@
       // Check collision with self
       for(let i=0; i<snake.length; i++){
         if(head.x === snake[i].x && head.y === snake[i].y){
-          alert("Game Over! Score: " + score);
-          snake = [{ x: 200, y: 200 }];
-          direction = "RIGHT";
-          score = 0;
+          gameOver();
+          return;
         }
       }
 
@@ -101,9 +285,11 @@
       ctx.fillStyle = "white";
       ctx.font = "16px Arial";
       ctx.fillText("Score: "+score, 10, 20);
+      if(scoreEl) scoreEl.textContent = "Score: " + score;
     }
 
-    setInterval(draw, 100);
+    // Start the game loop and keep a handle so it can be paused on game over
+    gameInterval = setInterval(draw, 100);
   </script>
 </body>
 </html>
