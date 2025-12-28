@@ -1,0 +1,20 @@
+[
+    {
+        "camera_id": "CAM01",
+        "source": "input_videos/source.mp4",
+        "recording_path": "recordings/CAM01/",
+        "s3_path": "s3_bucket/CAM01/"
+    },
+    {
+        "camera_id": "CAM02",
+        "source": "input_videos/source.mp4",
+        "recording_path": "recordings/CAM02/",
+        "s3_path": "s3_bucket/CAM02/"
+    },
+    {
+        "camera_id": "CAM03",
+        "source": "input_videos/source.mp4",
+        "recording_path": "recordings/CAM03/",
+        "s3_path": "s3_bucket/CAM03/"
+    }
+]
